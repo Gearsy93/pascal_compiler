@@ -5,4 +5,15 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="InputModule.cs" />
+    <Compile Remove="LexicalAnalyzer.cs" />
+    <Compile Remove="SemanticAnalyzer.cs" />
+    <Compile Remove="SyntaxAnalyer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Standard" Version="1.1.0-beta" />
+  </ItemGroup>
+
 </Project>
