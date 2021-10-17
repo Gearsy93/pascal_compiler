@@ -15,6 +15,7 @@
 //оbject
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace InputOutput
 {
@@ -29,16 +30,15 @@ namespace InputOutput
 		public int Last_Line_Position { get; private set; }
 		public int Count { get; private set; }
 
-
-
-		public IO(string path)
+	public IO(string path)
 		{
-			using (StreamReader streamReader = new StreamReader(path))
-			{
-				ProgramText = streamReader.ReadToEnd();
+            using (StreamReader streamReader = new StreamReader(path))
+            {
+                ProgramText = streamReader.ReadToEnd();				
+				Console.WriteLine(ProgramText.Length);
 			}
-			Line_Number = 0;
-			Line_Position = 0;
+            Line_Number = 0;
+            Line_Position = 0;
 			Count = 0;
 		}
 
