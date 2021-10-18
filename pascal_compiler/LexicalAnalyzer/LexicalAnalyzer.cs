@@ -182,6 +182,7 @@ namespace LexicalAnalyzer
 				if (CurrentLexem.type != "unused")
                 {
 					Console.WriteLine("Token: " + CurrentLexem.type + "| Value: " + raw_value.ToString() + "| Position: " + CurrentLexem.LineNumber.ToString() + "| Line: " + (CurrentLexem.LinePosition + 1).ToString() + "| Count: " + Reader.Count.ToString());
+					//Console.WriteLine(raw_value.ToString());
 				}
 
 				CurrentLexem = NextSym(out raw_value);
@@ -243,9 +244,9 @@ namespace LexicalAnalyzer
 						st += symbol;
 						raw_value = st;
 						if (Math.Abs(int.Parse(st, System.Globalization.CultureInfo.InvariantCulture)) > 32768)
-                        {
+						{
 							Errors.Add(Create_error(1, Reader.Line_Number, Reader.Line_Position));
-                        }
+						}
 					}
 					if (CurrentLexem.type == "")
 					{
@@ -280,29 +281,30 @@ namespace LexicalAnalyzer
 							Reader.Back();
 						}
 
-                        if (Reader.Nextch() == '*')
-                        {
-                            CurrentLexem.type = "comment";
-                            string st = "/*";
-                            while (st[st.Length - 2].ToString() + st[st.Length - 1].ToString() != "*/")
-                            {
+						if (Reader.Nextch() == '*')
+						{
+							CurrentLexem.type = "comment";
+							string st = "/*";
+							while (st[st.Length - 2].ToString() + st[st.Length - 1].ToString() != "*/")
+							{
 								char a = Reader.Nextch();
-								
+
 								if (a != '\n' && a != '\r' && a != '\t') st += a;
-								else if (Reader.Count == Reader.ProgramText.Length - 1)
-                                {
+								if (Reader.Count == Reader.ProgramText.Length)
+								{
 									Errors.Add(Create_error(6, Reader.Line_Number, Reader.Line_Position));
-                                }
+									break;
+								}
 
 							}
-                            raw_value = st;
-                        }
-                        else
-                        {
-                            CurrentLexem.type = "limiter";
-                            Reader.Back();
-                        }
-                    }
+							raw_value = st;
+						}
+						else
+						{
+							CurrentLexem.type = "limiter";
+							Reader.Back();
+						}
+					}
 					if (symbol == '<')
 					{
 						if (Reader.Nextch() == '>')
@@ -345,7 +347,7 @@ namespace LexicalAnalyzer
 				{
 					CurrentLexem.type = "limiter";
 					raw_value = "" + symbol;
-					
+
 				}
 				else if (specifier.Contains("" + symbol))
 				{
@@ -353,25 +355,20 @@ namespace LexicalAnalyzer
 					CurrentLexem.type = "specifier";
 
 				}
-				else
+                else 
                 {
-					CurrentLexem.type = "unused";
-					raw_value = "???";
-					Errors.Add(Create_error(2, Reader.Line_Number, Reader.Line_Position));
-				}
-				if (Reader.Nextch() == '.')
-				{
-					raw_value = ".";
-					if (Error_st.dot_flag == true)
-					{
-						Errors.Add(Create_error(4, Reader.Line_Number, Reader.Line_Position));
+					if (symbol == '\0' || symbol == '\t' || symbol == '\r' || symbol == '\n' || symbol == '\v' || symbol == '\f' || symbol == '\b' || symbol == ' ')
+                    {
+						CurrentLexem.type = "unused";
+						raw_value = "???";
 					}
-					Error_st.dot_flag = true;
+                    else
+                    {
+						Console.WriteLine(symbol);
+						Errors.Add(Create_error(2, Reader.Line_Number, Reader.Line_Position));
+					}
+					
 				}
-				else
-                {
-					Reader.Back();
-                }
 			}
 			return CurrentLexem;
         }

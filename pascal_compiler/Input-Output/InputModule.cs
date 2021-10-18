@@ -35,7 +35,6 @@ namespace InputOutput
             using (StreamReader streamReader = new StreamReader(path))
             {
                 ProgramText = streamReader.ReadToEnd();				
-				Console.WriteLine(ProgramText.Length);
 			}
             Line_Number = 0;
             Line_Position = 0;
