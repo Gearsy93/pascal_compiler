@@ -2,8 +2,6 @@
  * Вход: последовательность литер
  * Выход: лексически проверенная программа, лексические ошибки
  */
-#define star
-#define slash
 
 using System;
 using System.Linq;
@@ -16,8 +14,7 @@ namespace LexicalAnalyzer
 	public class Lexical
 	{
 		public List<string> Errors;
-        
-
+       
         public struct Error_struct
         {
 			public bool dot_flag;
@@ -27,8 +24,6 @@ namespace LexicalAnalyzer
 				this.dot_flag = dot_flag_;
 
 			}
-
-			
 		};
 		public Error_struct Error_st;
 		public Lexical()
@@ -39,13 +34,15 @@ namespace LexicalAnalyzer
 		
 		public class Lexem
         {
+			public string raw_value;
 			public int LinePosition;
 			public int LineNumber;
 			public string type;
 
 
-			public Lexem (int pos, int num, string input_type)
+			public Lexem (int pos, int num, string input_type, string input_value)
             {
+				raw_value = input_value;
 				LineNumber = num;
 				LinePosition = pos;
 				type = input_type;
@@ -53,11 +50,44 @@ namespace LexicalAnalyzer
 			}
         };
 
+		public struct Position_L
+		{
+			public int Line_Number;
+			public int Line_Position;
+			public int Last_Line_Number;
+			public int Last_Line_Position;
+			public int Count;
+		}
+
+		public Position_L Save_Position()
+		{
+			Position_L Backup = new Position_L();
+
+			Backup.Count = Reader.Count;
+			Backup.Line_Number = Reader.Line_Number;
+			Backup.Line_Position = Reader.Line_Number;
+			Backup.Last_Line_Number = Reader.Last_Line_Number;
+			Backup.Last_Line_Position = Reader.Last_Line_Position;
+
+			return Backup;
+		}
+
+		public void Set_Position(Position_L Backup)
+		{
+			Reader.Count = Backup.Count;
+			Reader.Line_Number = Backup.Line_Number;
+			Reader.Line_Position = Backup.Line_Position;
+			Reader.Last_Line_Number = Backup.Last_Line_Number;
+			Reader.Last_Line_Position = Backup.Last_Line_Position;
+		}
+
+
+		//Пока не используются, в лексемах хранятся сырые строковые значения
 		public class Keyword : Lexem
         {
 			public string value;
 
-			public Keyword(int pos, int num, string val, string input_type) : base(pos, num, input_type)
+			public Keyword(int pos, int num, string val, string input_type, string input_value) : base(pos, num, input_type, input_value)
             {
 				value = val;
             }
@@ -68,7 +98,7 @@ namespace LexicalAnalyzer
 		{
 			public double value;
 
-			public Real(int pos, int num, double val, string input_type) : base(pos, num, input_type)
+			public Real(int pos, int num, double val, string input_type, string input_value) : base(pos, num, input_type, input_value)
 			{
 				value = val;
 			}
@@ -79,7 +109,7 @@ namespace LexicalAnalyzer
 		{
 			public int value;
 
-			public Int(int pos, int num, int val, string input_type) : base(pos, num, input_type)
+			public Int(int pos, int num, int val, string input_type, string input_value) : base(pos, num, input_type, input_value)
 			{
 				value = val;
 			}
@@ -90,7 +120,7 @@ namespace LexicalAnalyzer
 		{
 			public string value;
 
-			public Operation(int pos, int num, string val, string input_type) : base(pos, num, input_type)
+			public Operation(int pos, int num, string val, string input_type, string input_value) : base(pos, num, input_type, input_value)
 			{
 				value = val;
 			}
@@ -101,7 +131,7 @@ namespace LexicalAnalyzer
 		{
 			public string value;
 
-			public Id(int pos, int num, string val, string input_type) : base(pos, num, input_type)
+			public Id(int pos, int num, string val, string input_type, string input_value) : base(pos, num, input_type, input_value)
 			{
 				value = val;
 			}
@@ -112,7 +142,7 @@ namespace LexicalAnalyzer
 		{
 			public string value;
 
-			public Limiter(int pos, int num, string val, string input_type) : base(pos, num, input_type)
+			public Limiter(int pos, int num, string val, string input_type, string input_value) : base(pos, num, input_type, input_value)
 			{
 				value = val;
 			}
@@ -123,7 +153,7 @@ namespace LexicalAnalyzer
 		{
 			public string value;
 
-			public Specifier(int pos, int num, string val, string input_type) : base(pos, num, input_type)
+			public Specifier(int pos, int num, string val, string input_type, string input_value) : base(pos, num, input_type, input_value)
 			{
 				value = val;
 			}
@@ -135,9 +165,6 @@ namespace LexicalAnalyzer
         {
 			Reader = Input_Reader;
         }
-
-        //Создание списка ошибик и токенов 
-        //float.Parse(st, System.Globalization.CultureInfo.InvariantCulture)
 
         public static string Create_error(int error_num, int line, int position)
         {
@@ -175,25 +202,21 @@ namespace LexicalAnalyzer
 
         public void PrintLexem()
         {
-			string raw_value;
-			Lexem CurrentLexem = NextSym(out raw_value);
-            while (raw_value != null)
+			Lexem CurrentLexem = NextSym();
+            while (CurrentLexem.raw_value != null)
             {
-				if (CurrentLexem.type != "unused")
+				if (CurrentLexem.type != "unused" && CurrentLexem.type != "comment")
                 {
-					Console.WriteLine("Token: " + CurrentLexem.type + "| Value: " + raw_value.ToString() + "| Position: " + CurrentLexem.LineNumber.ToString() + "| Line: " + (CurrentLexem.LinePosition + 1).ToString() + "| Count: " + Reader.Count.ToString());
-					//Console.WriteLine(raw_value.ToString());
+					Console.WriteLine("Token: " + CurrentLexem.type + "| Value: " + CurrentLexem.raw_value.ToString() + "| Position: " + CurrentLexem.LineNumber.ToString() + "| Line: " + (CurrentLexem.LinePosition + 1).ToString() + "| Count: " + Reader.Count.ToString());
 				}
-
-				CurrentLexem = NextSym(out raw_value);
+				CurrentLexem = NextSym();
 			}
 		}
 
 
-		public Lexem NextSym(out string raw_value)
+		public Lexem NextSym()
         {
-			Lexem CurrentLexem = new Lexem(Reader.Line_Number, Reader.Line_Position, "");
-			raw_value = null;
+			Lexem CurrentLexem = new Lexem(Reader.Line_Number, Reader.Line_Position, "", null);
 			if (Reader.Count < Reader.ProgramText.Length)
 			{
 				char symbol = Reader.Nextch();
@@ -205,61 +228,64 @@ namespace LexicalAnalyzer
 				string[] operation = { "+", "-", "*", "/", "%", "=", "<", ">", "@" };
 				string[] limiter = { ",", ".", "'", "(", ")", "[", "]", "{", "}", ":", ";" };
 				string[] specifier = { "^", "#", "$" };
-				if (Char.IsLetter(symbol) || symbol == '_')
-				{
-					string st = "" + symbol;
-					symbol = Reader.Nextch();
-					while (Char.IsLetter(symbol) || Char.IsDigit(symbol) || symbol == '_')
-					{
-						if (Char.IsDigit(symbol) || symbol == '_')
-						{
-							CurrentLexem.type = "id";
-						}
-						st += symbol;
-						symbol = Reader.Nextch();
-					}
-					Reader.Back();
-					if (CurrentLexem.type == "")
-					{
-						string[] array = { "if", "do", "of", "or", "in", "to", "end", "var", "div", "and", "not", "for", "mod", "nil", "set", "then", "else", "case", "file", "goto", "type", "with", "begin", "while", "downto", "packed", "record", "repeat", "program", "function", "procedure" };
-						if (array.Contains(st.ToLower()))
-						{
-							CurrentLexem.type = "keyword";
-						}
-						else
-						{
-							CurrentLexem.type = "id";
+				string[] keywords = { "if", "do", "of", "or", "in", "to", "end", "var", "div", "and", "not", "for", "mod", "nil", "set", "then", "else", "case", "file", "goto", "type", "with", "begin", "while", "downto", "packed", "record", "repeat", "program", "function", "procedure" };
 
+
+				if (Char.IsLetter(symbol))
+				{
+
+					char Symbol_Backup = symbol;
+					Position_L Backup = Save_Position();
+
+					string raw = "";
+					bool found = false;
+
+					//9 - макс длина ключевого слова
+					while (raw.Length <= 9 && !found)
+                    {
+						raw += symbol;
+
+						foreach (string keyword in keywords)
+                        {
+							if(raw.ToLower() == keyword)
+                            {
+								found = true;
+								break;
+                            }
+                        }
+						if (!found)
+						{
+							symbol = Reader.Nextch();
 						}
+						else break;
 					}
-					raw_value = st;
+
+					if(!found)
+                    {
+						Set_Position(Backup);
+						symbol = Symbol_Backup;
+						CurrentLexem.type = "letter";
+						CurrentLexem.raw_value = "" + symbol;
+					}
+					else
+                    {
+						CurrentLexem.type = "keyword";
+						CurrentLexem.raw_value = raw;
+					}
+
+					
 				}
 				else if (Char.IsDigit(symbol))
 				{
-					string st = "" + symbol;
-					symbol = Reader.Nextch();
-					while (Char.IsLetter(symbol) || symbol == '.')
-					{
-						if (symbol == '.') CurrentLexem.type = "real";
-						st += symbol;
-						raw_value = st;
-						if (Math.Abs(int.Parse(st, System.Globalization.CultureInfo.InvariantCulture)) > 32768)
-						{
-							Errors.Add(Create_error(1, Reader.Line_Number, Reader.Line_Position));
-						}
-					}
-					if (CurrentLexem.type == "")
-					{
-						CurrentLexem.type = "int";
-						raw_value = st;
-					}
-					Reader.Back();
+
+					CurrentLexem.type = "digit";
+					CurrentLexem.raw_value = "" + symbol;
 
 				}
 				else if (operation.Contains("" + symbol))
 				{
 					CurrentLexem.type = "operation";
-					raw_value = "" + symbol;
+					CurrentLexem.raw_value = "" + symbol;
 					if (symbol == '/')
 					{
 						if (Reader.Nextch() == '/')
@@ -272,8 +298,9 @@ namespace LexicalAnalyzer
 								st += symbol;
 
 							} while (symbol != '\n' && symbol != '\r' && symbol != '\t');
-							st = st.Substring(0, st.Length - 2);
-							raw_value = st;
+							st = st.Substring(0, st.Length - 1);
+							CurrentLexem.raw_value = st;
+							return CurrentLexem;
 						}
 						else
 						{
@@ -297,7 +324,7 @@ namespace LexicalAnalyzer
 								}
 
 							}
-							raw_value = st;
+							CurrentLexem.raw_value = st;
 						}
 						else
 						{
@@ -309,11 +336,11 @@ namespace LexicalAnalyzer
 					{
 						if (Reader.Nextch() == '>')
 						{
-							raw_value = "<>";
+							CurrentLexem.raw_value = "<>";
 						}
 						else if (Reader.Nextch() == '=')
 						{
-							raw_value = "<=";
+							CurrentLexem.raw_value = "<=";
 						}
 						else
 						{
@@ -324,7 +351,7 @@ namespace LexicalAnalyzer
 					{
 						if (Reader.Nextch() == '=')
 						{
-							raw_value = ">=";
+							CurrentLexem.raw_value = ">=";
 						}
 						else Reader.Back();
 					}
@@ -332,11 +359,11 @@ namespace LexicalAnalyzer
 				else if (symbol == ':')
 				{
 					CurrentLexem.type = "operation";
-					raw_value = "" + symbol;
+					CurrentLexem.raw_value = "" + symbol;
 					if (Reader.Nextch() == '=')
 					{
 						CurrentLexem.type = "operation";
-						raw_value = ":=";
+						CurrentLexem.raw_value = ":=";
 					}
 					else
 					{
@@ -346,29 +373,38 @@ namespace LexicalAnalyzer
 				else if (limiter.Contains("" + symbol))
 				{
 					CurrentLexem.type = "limiter";
-					raw_value = "" + symbol;
+					CurrentLexem.raw_value = "" + symbol;
 
 				}
 				else if (specifier.Contains("" + symbol))
 				{
-					raw_value = "" + symbol;
+					CurrentLexem.raw_value = "" + symbol;
 					CurrentLexem.type = "specifier";
 
+				}
+				else if (symbol == '_')
+                {
+					CurrentLexem.raw_value = "" + symbol;
+					CurrentLexem.type = "_";
 				}
                 else 
                 {
 					if (symbol == '\0' || symbol == '\t' || symbol == '\r' || symbol == '\n' || symbol == '\v' || symbol == '\f' || symbol == '\b' || symbol == ' ')
                     {
 						CurrentLexem.type = "unused";
-						raw_value = "???";
+						CurrentLexem.raw_value = "???";
 					}
                     else
                     {
 						Console.WriteLine(symbol);
 						Errors.Add(Create_error(2, Reader.Line_Number, Reader.Line_Position));
 					}
-					
 				}
+			}
+            else
+            {
+				Console.WriteLine("Неожиданный конец файла");
+				System.Environment.Exit(1);
 			}
 			return CurrentLexem;
         }
