@@ -1,6 +1,7 @@
 ﻿using System;
 using InputOutput;
 using LexicalAnalyzer;
+using SyntaxAnalyzer;
 using System.Collections.Generic;
 
 namespace pascal_compiler
@@ -9,17 +10,34 @@ namespace pascal_compiler
     {
         static void Main(string[] args)
         {
-            
-            string path = @"C:\Users\Gearsy\Source\Repos\Gearsy93\pascal_compiler\pascal_compiler\input.txt";
+            // Путь к тексту программы 
+            string path = @"C:\Users\Pists\OneDrive\Документы\7 Трим\Транслятор\Текущая версия\pascal_compiler\pascal_compiler\input.txt";
+
+            //инициализация ввода-вывода
             IO Reader = new IO(path);
+
+            //Инициализация лексического анализатора
             Lexical Lexical_Analyzer = new Lexical(Reader);
-            Lexical_Analyzer.Errors = new List<string>();
+
+            //Вывод полученных лексем
             Lexical_Analyzer.PrintLexem();
-            //Вывод ошибок
-            for (int i = 0; i < Lexical_Analyzer.Errors.Count; i++)
-            {
-                Console.WriteLine(Lexical_Analyzer.Errors[i]);
-            }
+            //Инициализация текущей лексемы
+            
+
+            //Переместить "указатель" в начало файла
+            Reader.Set_Start();
+            Lexical.Lexem Current_Lexem = Lexical_Analyzer.NextSym();
+
+            //Инициализация синтакического анализатора
+            Syntaxic Syntacix_Analyer = new Syntaxic(Lexical_Analyzer, Reader, Current_Lexem);
+
+
+            
+            
+
+            Syntacix_Analyer.Accept_Program();
+
+            
         }
     }
 }
