@@ -19,7 +19,7 @@ using LexicalAnalyzer;
 
 namespace SyntaxAnalyzer
 {
-	public class Syntaxic //toxic
+	public class Syntaxic
 	{
 		//Всем привет с вами Гена Букин и сегодня мы будем разбирать по полочкам выражения
 		public struct Position
@@ -51,14 +51,12 @@ namespace SyntaxAnalyzer
 			got = " Получено " + Current_Lexem.value.ToString();
 			if (Current_Lexem.value.ToString() == "") got = " Встречен конец файла";
 			Console.WriteLine("Col: " + Reader.Line_Position + " Ln: " + Reader.Line_Number + got + ", а ожидалось " + expected);
-			System.Environment.Exit(1);
 		}
 
 		public void Raise_Error(int code)
 		{
 			//Добавить форматирование
 			Console.WriteLine("Col: " + Reader.Line_Position + " Ln: " + Reader.Line_Number + " Description: " + Lexical.Get_Error(code));
-			System.Environment.Exit(1);
 		}
 
 		//////////////////ОШИБКИ///////////////////////
@@ -66,14 +64,13 @@ namespace SyntaxAnalyzer
 		public Position Save_Position()
 		{
 			Position Backup = new Position();
-
+			
 			Backup.Count = Reader.Count;
 			Backup.Line_Number = Reader.Line_Number;
 			Backup.Line_Position = Reader.Line_Number;
 			Backup.Last_Line_Number = Reader.Last_Line_Number;
 			Backup.Last_Line_Position = Reader.Last_Line_Position;
 			Backup.Current_Lexem = Current_Lexem;
-
 			return Backup;
 		}
 
@@ -91,22 +88,27 @@ namespace SyntaxAnalyzer
 		public void NextSym()
 		{
 			Current_Lexem = Lexical_Analyzer.NextSym();
+			Console.WriteLine("&&New Current Lexem: " + Current_Lexem.value);
 		}
 
 		//Проверяет совпадение полученной лекесы с текущей
 		public bool Accept_Raw(string raw_value)
 		{
-			Console.WriteLine("Получено: " + Current_Lexem.value.ToString().ToLower());
-			Console.WriteLine("Ожидалось: " + raw_value);
 			if (Current_Lexem.value.ToString().ToLower() == raw_value)
 			{
-				NextSym();
+				if (Reader.Count < Reader.ProgramText.Length) NextSym();
 				return true;
 			}
-			else return false;
+			else
+            {
+				return false;
+			}
 		}
 
 		//////////////////БНФ///////////////////////
+		/// <summary>
+		/// Он принЯл переменную, которая оказалась названием функции, в итоге 
+		/// </summary>
 
 		//////////////////ОТНОСИТЕЛЬНО УВЕРЕН/////////////
 		public void Accept_Program()
@@ -120,18 +122,21 @@ namespace SyntaxAnalyzer
 			Accept_Block();
 
 			if (!Accept_Raw(".")) Raise_Error(61);
+			Console.WriteLine("Done Accept_Program");
 		}
 
 		public void Accept_Block()
 		{
 			Accept_Description_Chapter();
-			Console.WriteLine("Now Operators");
+			Console.WriteLine("--------------------Now Operators");
 			if (!Accept_Operators_Chapter()) Unhandled_Error("раздел описаний");
+			Console.WriteLine("Done Accept_Block");
 		}
 
 		public void Accept_Description_Chapter()
 		{
 			Accept_Variables_Chapter();
+			Console.WriteLine("Done Accept_Description_Chapter");
 		}
 
 		public bool Accept_Operators_Chapter()
@@ -139,13 +144,15 @@ namespace SyntaxAnalyzer
 			if (!Accept_Compound_Operator())
 			{
 				Unhandled_Error("составной оператор");
+				return false;
 			}
+			Console.WriteLine("Done Accept_Operators_Chapter");
 			return true;
 		}
 
         public void Accept_Variables_Chapter()
         {
-            if (Accept_Raw("var"))
+			if (Accept_Raw("var"))
             {
                 if (!Accept_Variables_Description()) Raise_Error(2);
                 if (!Accept_Raw(";")) Raise_Error(14);
@@ -159,7 +166,7 @@ namespace SyntaxAnalyzer
 
         public bool Accept_Compound_Operator()
         {
-            if (Accept_Raw("begin"))
+			if (Accept_Raw("begin"))
             {
                 if (!Accept_Operator())
                 {
@@ -170,79 +177,118 @@ namespace SyntaxAnalyzer
                 {
                     if (!Accept_Operator())
                     {
-                        Unhandled_Error("оператор");
+                        Unhandled_Error("операторы кончились");
                     }
                 }
 
                 if (!Accept_Raw("end")) Raise_Error(13);
 
-                return true;
+				Console.WriteLine("Done Accept_Compound_Operator");
+				return true;
             }
             else return false;
 		}
 
         public bool Accept_Operator()
         {
-
-            Position Backup = Save_Position();
+			Position Backup = Save_Position();
 
             if (!Accept_Main_Operator())
             {
                 Set_Position(Backup);
                 if (!Accept_Derivative_Operator())
                 {
-                    Unhandled_Error("основной или производный оператор");
+					Set_Position(Backup);
+					return false;
+                    //Unhandled_Error("основной или производный оператор");
                 }
             }
-
-            return true;
+			Console.WriteLine("Done Accept_Operator");
+			return true;
         }
 
 		public bool Accept_Main_Operator()
         {
-            Position Backup = Save_Position();
-            if (!Accept_Assignment_Operator())
+			Position Backup = Save_Position();
+            if (!Accept_Void_Operator())
             {
                 Set_Position(Backup);
 
-                //???
-                if (!Accept_Void_Operator())
+                if (!Accept_Procedure_Operator())
                 {
                     Set_Position(Backup);
-                    return false;
+
+					if (!Accept_Assignment_Operator())
+					{
+						Set_Position(Backup);
+						return false;
+					}
                 }
             }
-            return true;
+			Console.WriteLine("Done Accept_Main_Operator");
+			return true;
 		}
 
-        public bool Accept_Derivative_Operator()
+		public bool Accept_Procedure_Operator()
+		{
+			if (Accept_Procedure_Name())
+			{
+				if (Accept_Raw("("))
+				{
+
+					do
+					{
+						if (!Accept_Actual_Parameter())
+						{
+							Unhandled_Error("фактический оператор");
+						}
+					} while (Accept_Raw(","));
+
+					if (!Accept_Raw(")")) Raise_Error(4);
+					Console.WriteLine("Done Accept_Procedure_Operator");
+					return true;
+				}
+				else return false;
+			}
+			else return false;
+		}
+
+		public bool Accept_Derivative_Operator()
         {
-            Position Backup = Save_Position();
+			Position Backup = Save_Position();
             if (!Accept_Compound_Operator())
             {
 				Set_Position(Backup);
 				if (!Accept_Connection_Operator())
 				{
+					Console.WriteLine("Ушли из connection");
 					Set_Position(Backup);
 					return false;
 				}
 			}
-            return true;
+			Console.WriteLine("Done Accept_Derivative_Operator");
+			return true;
         }
 
 		public bool Accept_Variables_Description()
         {
-			//false?
 			Position Backup = Save_Position();
-			do
-            {
+			if (!Accept_Variable_Name())
+			{
+				Set_Position(Backup);
+				//Unhandled_Error("имя переменной");
+				return false;
+			}
+
+			while (Accept_Raw(","))
+			{
                 if (!Accept_Variable_Name())
                 {
 					Set_Position(Backup);
-					Unhandled_Error("имя переменной");
+					//Unhandled_Error("имя переменной");
 					return false;
 				}
-            } while (Accept_Raw(","));
+            } 
 
             if (!Accept_Raw(":")) Raise_Error(5);
 
@@ -250,56 +296,61 @@ namespace SyntaxAnalyzer
             {
                 Unhandled_Error("тип");
             }
-
-            return true;
+			Console.WriteLine("Done Accept_Variables_Description");
+			return true;
 		}
 
         public bool Accept_Assignment_Operator()
         {
-            Position Backup = Save_Position();
-            if (Accept_Function_Name())
-            {
-                if (!Accept_Raw(":=")) Raise_Error(51);
+			Position Backup = Save_Position();
 
-                if (!Accept_Expression())
-                {
-                    Unhandled_Error("выражение");
-                }
-                return true;
-            }
+			if (Accept_Variable_Name())
+			{
+
+				if (!Accept_Raw(":=")) Raise_Error(51);
+
+				if (!Accept_Expression())
+				{
+					Unhandled_Error("выражение");
+				}
+				Console.WriteLine("Done Accept_Assignment_Operator");
+				return true;
+			}
 
             Set_Position(Backup);
 
-            if (Accept_Variable_Name())
-            {
+			if (Accept_Function_Name())
+			{
+				if (!Accept_Raw(":=")) Raise_Error(51);
 
-                if (!Accept_Raw(":=")) Raise_Error(51);
+				if (!Accept_Expression())
+				{
+					Unhandled_Error("выражение");
+				}
+				Console.WriteLine("Done Accept_Assignment_Operator");
+				return true;
+			}
 
-                if (!Accept_Expression())
-                {
-                    Unhandled_Error("выражение");
-                }
-                return true;
-            }
-            return false;
+			return false;
         }
 
         public bool Accept_Void_Operator()
         {
-            Position Backup = new Position();
+			Position Backup = new Position();
             //По сути нужно знать, что следующий токен - ;
             if (!Accept_Raw(";")) return false;
             else
             {
                 Set_Position(Backup);
-                return true;
+				Console.WriteLine("Done Accept_Void_Operator");
+				return true;
             }
 
         }
 
         public bool Accept_Connection_Operator()
         {
-            if (!Accept_Raw("with"))
+			if (Accept_Raw("with"))
             {
                 if (!Accept_Variable())
                 {
@@ -320,8 +371,8 @@ namespace SyntaxAnalyzer
                 {
                     Unhandled_Error("оператор");
                 }
-
-                return true;
+				Console.WriteLine("Done Accept_Connection_Operator");
+				return true;
             }
             else return false;
         }
@@ -332,28 +383,39 @@ namespace SyntaxAnalyzer
 			{
 				return false;
 			}
-			else return true;
+			else
+            {
+				Console.WriteLine("Done Accept_Variable_Name");
+				return true;
+			}
 		}
 
 		public bool Accept_Type()
 		{
-
 			if (!Accept_Type_Name())
 			{
 				return false;
 			}
-			else return true;
+			else
+            {
+				Console.WriteLine("Done Accept_Type");
+				return true;
+			}
 		}
 
+		//Проверка по таблице
         public bool Accept_Function_Name()
         {
-            if (!Accept_Name()) return false;
-            else return true;
+			if (!Accept_Name()) return false;
+            else
+            {
+				return true;
+            }
 		}
 
         public bool Accept_Expression()
         {
-            Position Backup = Save_Position();
+			Position Backup = Save_Position();
             if (!Accept_Arithmetic_Expression())
             {
                 Set_Position(Backup);
@@ -371,12 +433,13 @@ namespace SyntaxAnalyzer
 					}
                 }
             }
-            return true;
+			Console.WriteLine("Done Accept_Expression");
+			return true;
 		}
 
         public bool Accept_Variable()
         {
-            Position Backup = Save_Position();
+			Position Backup = Save_Position();
 
             if (!Accept_Variable_Name())
             {
@@ -389,14 +452,18 @@ namespace SyntaxAnalyzer
                 }
             }
 
-
-            return true;
+			Console.WriteLine("Done Accept_Variable");
+			return true;
 		}
 
         public bool Accept_Field_Name()
         {
-            if (!Accept_Name()) return false;
-            else return true;
+			if (!Accept_Name()) return false;
+            else
+            {
+				Console.WriteLine("Done Accept_Field_Name");
+				return true;
+			}
         }
 
         
@@ -412,9 +479,21 @@ namespace SyntaxAnalyzer
 					if (!Accept_Summand()) Unhandled_Error("слагаемое");
 				}
 
+				Console.WriteLine("Done Accept_Arithmetic_Expression");
 				return true;
 			}
-			else return false;
+			else
+            {
+				if (!Accept_Summand()) Unhandled_Error("слагаемое");
+
+				while (Accept_Raw("+") || Accept_Raw("-"))
+				{
+					if (!Accept_Summand()) Unhandled_Error("слагаемое");
+				}
+
+				Console.WriteLine("Done Accept_Arithmetic_Expression");
+				return true;
+			}
 		}
 
 		public bool Accept_Summand()
@@ -427,6 +506,7 @@ namespace SyntaxAnalyzer
 					if (!Accept_Multiplier()) Unhandled_Error("множитель");
 				}
 			}
+			Console.WriteLine("Done Accept_Summand");
 			return true;
 		}
 
@@ -437,6 +517,7 @@ namespace SyntaxAnalyzer
 				if (!Accept_Arithmetic_Expression()) Unhandled_Error("Арифметическое выражение");
 
 				if (!Accept_Raw(")")) Raise_Error(4);
+				Console.WriteLine("Done Accept_Multiplier");
 				return true;
 			}
 			else
@@ -448,10 +529,10 @@ namespace SyntaxAnalyzer
 					if (!Accept_Unsigned_Integer())
 					{
 						Set_Position(Backup);
-						if (!Accept_Variable())
+						if (!Accept_Function())
 						{
 							Set_Position(Backup);
-							if (!Accept_Function())
+							if (!Accept_Variable())
 							{
 								Set_Position(Backup);
 								return false;
@@ -459,6 +540,7 @@ namespace SyntaxAnalyzer
 						}
 					}
 				}
+				Console.WriteLine("Done Accept_Multiplier");
 				return true;
 			}
 
@@ -466,6 +548,7 @@ namespace SyntaxAnalyzer
 
 		public bool Accept_Function()
 		{
+			Position Backup = Save_Position();
 			if (Accept_Function_Name())
 			{
 				if (Accept_Raw("("))
@@ -478,7 +561,12 @@ namespace SyntaxAnalyzer
 					if (!Accept_Raw(")")) Raise_Error(4);
 
 				}
-
+                else
+                {
+					Set_Position(Backup);
+					return false;
+				}
+				Console.WriteLine("Done Accept_Function");
 				return true;
 			}
 			else return false;
@@ -500,6 +588,7 @@ namespace SyntaxAnalyzer
 					}
 				}
 			}
+			Console.WriteLine("Done Accept_Actual_Parameter");
 			return true;
 		}
 
@@ -523,18 +612,34 @@ namespace SyntaxAnalyzer
 					}
 				}
 			}
+			Console.WriteLine("Done Accept_Literal_Expression");
 			return true;
 		}
 
 		public bool Accept_Const_Name()
 		{
 			if (!Accept_Name()) return false;
-			else return true;
+			else
+			{
+				Console.WriteLine("Done Accept_Const_Name");
+				return true;
+			}
 		}
 
-        public bool Accept_Logical_Expression()
+		//Добавить проверку по таблице
+		public bool Accept_Procedure_Name()
         {
-            Position Backup = Save_Position();
+			if (!Accept_Name()) return false;
+			else
+			{
+				Console.WriteLine("Done Accept_Procedure_Name");
+				return true;
+			}
+		}
+
+		public bool Accept_Logical_Expression()
+        {
+			Position Backup = Save_Position();
 
             if (!Accept_Simple_Logical_Expression())
             {
@@ -547,12 +652,13 @@ namespace SyntaxAnalyzer
                 }
             }
 
+			Console.WriteLine("Done Accept_Logical_Expression");
             return true;
         }
 
         public bool Accept_Simple_Logical_Expression()
         {
-            do
+			do
             {
                 if (!Accept_Logical_Summand())
                 {
@@ -560,12 +666,13 @@ namespace SyntaxAnalyzer
                 }
             } while (Accept_Raw("or"));
 
+			Console.WriteLine("Done Accept_Simple_Logical_Expression");
             return true;
         }
 
         public bool Accept_Logical_Summand()
         {
-            do
+			do
             {
                 if (!Accept_Logical_Multiplier())
                 {
@@ -573,12 +680,13 @@ namespace SyntaxAnalyzer
                 }
             } while (Accept_Raw("and"));
 
+			Console.WriteLine("Done Accept_Logical_Summand");
             return true;
         }
 
         public bool Accept_Logical_Multiplier()
         {
-            Position Backup = Save_Position();
+			Position Backup = Save_Position();
 
             if (!Accept_True_False())
             {
@@ -597,7 +705,9 @@ namespace SyntaxAnalyzer
                         if (Accept_Raw("not"))
                         {
                             if (!Accept_Logical_Multiplier()) Unhandled_Error("логический множитель");
-                            return true;
+
+							Console.WriteLine("Done Accept_Logical_Multiplier");
+							return true;
                         }
 
                         Set_Position(Backup);
@@ -619,13 +729,13 @@ namespace SyntaxAnalyzer
                     }
                 }
             }
-
-            return true;
+			Console.WriteLine("Done Accept_Logical_Multiplier");
+			return true;
         }
 
         public bool Accept_Relationship()
         {
-            Position Backup = Save_Position();
+			Position Backup = Save_Position();
 
             if (!Accept_Scalar_Relationship())
             {
@@ -642,13 +752,13 @@ namespace SyntaxAnalyzer
                     }
                 }
             }
-
-            return true;
+			Console.WriteLine("Done Accept_Relationship");
+			return true;
         }
 
         public bool Accept_Scalar_Relationship()
         {
-            Position Backup = Save_Position();
+			Position Backup = Save_Position();
 
             if (!Accept_Arithmetic_Expression())
             {
@@ -673,6 +783,7 @@ namespace SyntaxAnalyzer
 						{
 							Unhandled_Error("простое логическое выражение");
 						}
+						Console.WriteLine("Done Accept_Scalar_Relationship");
 						return true;
 					}
 				}
@@ -687,7 +798,8 @@ namespace SyntaxAnalyzer
                     {
                         Unhandled_Error("литерное выражение");
                     }
-                    return true;
+					Console.WriteLine("Done Accept_Scalar_Relationship");
+					return true;
                 }
 
             }
@@ -702,13 +814,14 @@ namespace SyntaxAnalyzer
                 {
                     Unhandled_Error("арифметическое выражение");
                 }
-                return true;
+				Console.WriteLine("Done ");
+				return true;
             }
         }
 
         public bool Accept_String_Relastionship()
         {
-            Position Backup = Save_Position();
+			Position Backup = Save_Position();
 
             if (!Accept_String_Const())
             {
@@ -740,13 +853,13 @@ namespace SyntaxAnalyzer
 					return false;
 				}
             }
-            return true;
+			Console.WriteLine("Done Accept_String_Relastionship");
+			return true;
         }
 
         public bool Accept_Multiple_Relastionship()
         {
-
-            if (Accept_Multiple_Expression())
+			if (Accept_Multiple_Expression())
             {
 
                 if (!Accept_Raw("=") && !Accept_Raw("<>") && !Accept_Raw("<=") && Accept_Raw(">="))
@@ -758,14 +871,15 @@ namespace SyntaxAnalyzer
                 {
                     Unhandled_Error("множественное выражение");
                 }
-                return true;
+				Console.WriteLine("Done Accept_Multiple_Relastionship");
+				return true;
             }
             else return false;
         }
 
         public bool Accept_Multiple_Expression()
         {
-            do
+			do
             {
                 Position Backup = Save_Position();
 
@@ -787,7 +901,8 @@ namespace SyntaxAnalyzer
                 }
             } while (Accept_Raw("*") || Accept_Raw("+") || Accept_Raw("-"));
 
-            return true;
+			Console.WriteLine("Done Accept_Multiple_Expression");
+			return true;
 
         }
 
@@ -801,6 +916,7 @@ namespace SyntaxAnalyzer
 		{
 			if (!Accept_Raw("=") && !Accept_Raw("<>") && !Accept_Raw("<=") && !Accept_Raw("<") && !Accept_Raw(">=") && !Accept_Raw(">"))
 				return false;
+			Console.WriteLine("Done Accept_Comparison_Operaion");
 			return true;
 		}
 
@@ -809,12 +925,12 @@ namespace SyntaxAnalyzer
 		{
 			if (Get_Class() != "Real")
 			{
-				NextSym();
 				return false;
 			}
 			else
             {
 				NextSym();
+				Console.WriteLine("Done Accept_Real_Without_Sign");
 				return true;
             }
 		}
@@ -822,14 +938,14 @@ namespace SyntaxAnalyzer
 		//Тут надо подсасывать семантический
 		public bool Accept_Unsigned_Integer()
 		{
-				if (Get_Class() != "Integer")
+			if (Get_Class() != "Int")
 				{
-					NextSym();
 					return false;
 				}
 				else
 				{
 					NextSym();
+					Console.WriteLine("Done Accept_Unsigned_Integer");
 					return true;
 				}
 		}
@@ -838,26 +954,27 @@ namespace SyntaxAnalyzer
 		{
 			if (Get_Class() != "Id")
 			{
-				NextSym();
 				return false;
 			}
 			else
 			{
 				NextSym();
+				Console.WriteLine("Done Accept_Name");
 				return true;
 			}
 		}
+
 
 		public bool Accept_Type_Name()
 		{
 			if (Get_Class() != "Simple_Type")
 			{
-				NextSym();
 				return false;
 			}
 			else
 			{
 				NextSym();
+				Console.WriteLine("Done Accept_Type_Name");
 				return true;
 			}
 		}
@@ -866,12 +983,35 @@ namespace SyntaxAnalyzer
         {
 			if (Get_Class() != "String")
 			{
-				NextSym();
 				return false;
 			}
 			else
 			{
 				NextSym();
+				Console.WriteLine("Done Accept_String_Const");
+				return true;
+			}
+		}
+
+		public bool Accept_Literal_Const()
+		{
+			if (Get_Class() != "Char")
+			{
+				if (Get_Class() != "String")
+				{
+					return false;
+				}
+				else
+				{
+					NextSym();
+					Console.WriteLine("Done Accept_Literal_Const");
+					return true;
+				}
+			}
+			else
+			{
+				NextSym();
+				Console.WriteLine("Done Accept_Literal_Const");
 				return true;
 			}
 		}
@@ -886,29 +1026,16 @@ namespace SyntaxAnalyzer
 			{
 				if (Current_Lexem.value != "True" && Current_Lexem.value != "False")
 				{
-					NextSym();
 					return false;
 				}
 				NextSym();
+				Console.WriteLine("Done Accept_True_False");
 				return true;
 			}
 
 		}
 
-        public bool Accept_Literal_Const()
-        {
-
-			if (Get_Class() != "Char")
-			{
-				NextSym();
-				return false;
-			}
-			else
-			{
-				NextSym();
-				return true;
-			}
-		}
+        
 
         //public void Accept_Types_Chapter()
         //{

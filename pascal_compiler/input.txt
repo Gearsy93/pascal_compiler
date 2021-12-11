@@ -1,9 +1,9 @@
 Program Prog1;
 var a, b : integer;
+c: boolean;
+d, e : real;
+f: string; 
 begin
- write('Введите число ');
-//хочу пиццу
- readln(a);
- b:=a*a;
- writeln('Квадрат этого числа = ',b);
+//коммент
+ b:=((a div 2 + 3) + (5 + b / 8));
 end.

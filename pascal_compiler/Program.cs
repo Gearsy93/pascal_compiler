@@ -22,6 +22,7 @@ namespace pascal_compiler
             //Вывод полученных лексем
             Lexical_Analyzer.PrintLexem();
             //Инициализация текущей лексемы
+            
 
             //Переместить "указатель" в начало файла
             Reader.Set_Start();

@@ -470,13 +470,11 @@ namespace LexicalAnalyzer
 					else
 					{
 						//Левый символ, формируем целочисленную
-						CurrentLexem = new Real(Reader.Line_Number, Reader.Line_Position, raw);
+						CurrentLexem = new Int(Reader.Line_Number, Reader.Line_Position, raw);
 						Reader.Back();
 					}
 				}
-
-
-				if (System.Char.IsLetter(symbol))
+				else if (System.Char.IsLetter(symbol))
                 {
 					string raw = "" + symbol;
 					bool found_key = false;
@@ -538,7 +536,15 @@ namespace LexicalAnalyzer
 						}
                         else if (found_key)
                         {
-							CurrentLexem = new Keyword(Reader.Line_Number, Reader.Line_Position, lowered);
+							if (lowered == "div" || lowered == "mod")
+                            {
+								CurrentLexem = new Operation(Reader.Line_Number, Reader.Line_Position, lowered);
+							}
+                            else
+                            {
+								CurrentLexem = new Keyword(Reader.Line_Number, Reader.Line_Position, lowered);
+							}
+							
 							Reader.Back();
 							break;
 						}
@@ -714,6 +720,7 @@ namespace LexicalAnalyzer
 			}
             else
             {
+				Console.WriteLine(Reader.Count);
 				Console.WriteLine("Неожиданный конец файла");
 				System.Environment.Exit(1);
 			}
