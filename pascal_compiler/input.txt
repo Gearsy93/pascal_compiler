@@ -1,15 +1,6 @@
-var n,i,k,a:integer;
+program prog;
+var a, b: boolean;
 begin
-writeln('Enter n');
-readln(n);
-//Commemnt
-a:=0;
-for i:=1 to n do begin
-                 writeln('Enter ',i:1,'number');
-                 readln(a);
-                 if a mod 2=0 then k:=k+1;/*
-Comment 
-                 end; 
-writeln('Number of even',k);
-readln;
+ if true or 'text' then
+   writeln('text');
 end.
