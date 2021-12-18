@@ -1,0 +1,4 @@
+begin
+ if true or 'text' then
+   writeln('text');
+end.

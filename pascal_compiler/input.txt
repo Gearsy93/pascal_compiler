@@ -1,15 +1,11 @@
-var n,i,k,a:integer;
-begin
-writeln('Enter n');
-readln(n);
-//Commemnt
-a:=0;
-for i:=1 to n do begin
-                 writeln('Enter ',i:1,'number');
-                 readln(a);
-                 if a mod 2=0 then k:=k+1;/*
-Comment 
-                 end; 
-writeln('Number of even',k);
-readln;
+program prog;
+var a, b: boolean;
+e : char;
+as, u: string;
+i, i_ : integer;
+r : real;
+begin 
+    i_ :=7;
+    a := False;
+    if 'asdf' < b  then writeln();
 end.
